@@ -1,0 +1,67 @@
+name: Deploy LibMan Application
+
+on: [ push, pull_request ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Run Flake8
+        run: poetry run flake8 .
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: qwerty123456
+          POSTGRES_DB: LibMan
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Makemigrations
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          NAME: LibMan
+          USER: postgres
+          PASSWORD: qwerty123456
+          HOST: localhost
+          PORT: 5432
+        run: poetry run python manage.py makemigrations
+      - name: Run tests
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          NAME: LibMan
+          USER: postgres
+          PASSWORD: qwerty123456
+          HOST: localhost
+          PORT: 5432
+        run: poetry run python manage.py test
