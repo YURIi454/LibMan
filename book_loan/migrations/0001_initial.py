@@ -17,10 +17,12 @@ class Migration(migrations.Migration):
             name='BookLoan',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.PositiveSmallIntegerField(choices=[(1, 'у читателя'), (2, 'в библиотеке'), (0, 'утеряна')], default=2, verbose_name='статус выдачи')),
+                ('status', models.PositiveSmallIntegerField(choices=[(1, 'у читателя'), (2, 'в библиотеке'), (0, 'утеряна')],
+                                                            default=2, verbose_name='статус выдачи')),
                 ('date_get', models.DateTimeField(blank=True, null=True, verbose_name='дата выдачи')),
                 ('date_return', models.DateTimeField(blank=True, null=True, verbose_name='дата возврата')),
-                ('book', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='library.book', verbose_name='книга')),
+                ('book', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                           to='library.book', verbose_name='книга')),
             ],
             options={
                 'verbose_name': 'Читатель',

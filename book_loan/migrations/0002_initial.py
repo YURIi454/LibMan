@@ -18,6 +18,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='bookloan',
             name='reader',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reader', to=settings.AUTH_USER_MODEL, verbose_name='читатель'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='reader', to=settings.AUTH_USER_MODEL, verbose_name='читатель'),
         ),
     ]
