@@ -1,0 +1,144 @@
+name: Deploy LibMan Application
+
+on: [ push, pull_request ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Add Flake8 to project dependencies
+        run: poetry add flake8
+      - name: Run Flake8
+        run: poetry run flake8 .
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: qwerty123456
+          POSTGRES_DB: LibMan
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Makemigrations
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          NAME: LibMan
+          USER: postgres
+          PASSWORD: qwerty123456
+          HOST: localhost
+          PORT: 5432
+        run: poetry run python manage.py makemigrations
+      - name: Run tests
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          NAME: LibMan
+          USER: postgres
+          PASSWORD: qwerty123456
+          HOST: localhost
+          PORT: 5432
+        run: poetry run python manage.py test
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/L_M_M_B'
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      - name: Copy project files to server
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          DEPLOY_DIR="${{ secrets.DEPLOY_DIR }}"
+          if [ ! -d "\$DEPLOY_DIR/" ]; then
+            echo "Cloning repository into \$DEPLOY_DIR..."
+            git clone "https://github.com/YURIi454/LibMan.git" "\$DEPLOY_DIR/"
+          fi
+          cd "\$DEPLOY_DIR"
+          git fetch origin
+          git checkout "origin/L_M_M_B"
+          git reset --hard "origin/L_M_M_B"
+          EOF
+      - name: Install dependencies on server
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          cd "\$DEPLOY_DIR"
+          curl -sSL https://install.python-poetry.org | python3 -
+          ~/.local/bin/poetry install --no-root
+          EOF
+      - name: Setup and configure PostgreSQL
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          sudo apt update
+          
+          sudo apt install -y postgresql postgresql-contrib
+          
+          sudo systemctl start postgresql
+          sudo systemctl enable postgresql
+          
+          sudo systemctl status postgresql
+          
+          if ! systemctl is-active --quiet postgresql; then
+            echo "PostgreSQL is not running. Starting..."
+            sudo systemctl start postgresql
+          else
+            echo "PostgreSQL is already running."
+          fi
+          exit
+          
+          EOF
+      - name: Create .env file on server
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          cd "\$DEPLOY_DIR"
+          cat > .env <<EOL
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          NAME=${{ secrets.POSTGRES_NAME }}
+          USER=${{ secrets.POSTGRES_USER }}
+          PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          HOST=localhost
+          PORT=5432
+          EOL
+          EOF
+      - name: Install and start Docker compose
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          cd "${{ secrets.DEPLOY_DIR }}"
+          sudo docker compose down -v || true
+          sudo docker compose up -d --build
+          echo "Application started in background"
+          EOF
