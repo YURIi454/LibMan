@@ -11,8 +11,8 @@ router = DefaultRouter()
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('library.urls', namespace='library')),
-    path('authors', include('authors.urls', namespace='authors')),
-    path('book_loan', include('book_loan.urls', namespace='book_loan')),
+    path('authors/', include('authors.urls', namespace='authors')),
+    path('book_loan/', include('book_loan.urls', namespace='book_loan')),
     path('users/', include('users.urls', namespace='users')),
     path('api-auth/', include('rest_framework.urls')),
 

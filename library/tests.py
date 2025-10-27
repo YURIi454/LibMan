@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 
 from authors.models import Author
-from library.models import Book, Genre
+from library.models import Book
 from users.models import CustomUser
 
 
@@ -16,13 +16,11 @@ class LibraryAPITestCase(APITestCase):
             username='admn',
             password='test_pass123')
         self.author = Author.objects.create(full_name='Carl', description=' _ ')
-        self.genres = Genre.objects.create()
         self.client.login(email='test@test.com', username='test', password='test_pass123', is_staff=True)
         self.client.force_authenticate(user=self.user)
         self.book_data = {
             "title": "TEST_BOOK",
             "authors": [self.author.id],
-            "genres": [self.genres.id],
         }
 
     def create_test_book(self):
@@ -31,7 +29,6 @@ class LibraryAPITestCase(APITestCase):
         book = Book.objects.create(title="TEST_BOOK", )
 
         book.authors.set([self.author])
-        book.genres.set([self.genres])
 
         return book
 
@@ -44,7 +41,6 @@ class LibraryAPITestCase(APITestCase):
     def test_get_books_list(self):
         book = Book.objects.create(title="TEST_BOOK", )
         book.authors.set([self.author])
-        book.genres.set([self.genres])
         url = reverse('library:book_list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -53,11 +49,9 @@ class LibraryAPITestCase(APITestCase):
     def test_update_book(self):
         book = Book.objects.create(title="TEST_BOOK", )
         book.authors.set([self.author])
-        book.genres.set([self.genres])
         self.updated_data = {
             "title": "TEST_AGAIN",
             "authors": [self.author.id],
-            "genres": [self.genres.id]
         }
         url = reverse('library:book_update', kwargs={'pk': book.pk})
         response = self.client.put(url, self.updated_data, format='json')
@@ -65,7 +59,6 @@ class LibraryAPITestCase(APITestCase):
         updated_book = Book.objects.get(pk=book.pk)
         self.assertEqual(updated_book.title, 'TEST_AGAIN')
         self.assertIn(self.author, updated_book.authors.all())
-        self.assertIn(self.genres, updated_book.genres.all())
 
     def test_delete_book(self):
         book = self.create_test_book()

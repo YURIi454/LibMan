@@ -101,36 +101,13 @@ class GenreList(Enum):
         return labels[self.name]
 
 
-class Genre(models.Model):
-    """ Жанр. """
-
-    name = models.CharField(choices=[(tag.value, tag.label) for tag in GenreList], default=0,
-                            verbose_name='жанр')
-    description = models.TextField(max_length=500, blank=True, null=True, verbose_name='описание')
-
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='создан')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='изменён')
-
-    def __str__(self):
-        """ Вывод информации. """
-
-        return f'{self.name},{self.description}'
-
-    class Meta:
-        verbose_name = 'Жанр'
-        verbose_name_plural = 'Жанры'
-        ordering = ['created_at']
-        permissions = [
-            ('genre_redact', 'редактирование жанра'),
-        ]
-
-
 class Book(models.Model):
     """ Книга. """
 
     title = models.CharField(unique=True, max_length=200, verbose_name='название')
     authors = models.ManyToManyField(Author, verbose_name='автор', related_name='authors')
-    genres = models.ManyToManyField('Genre', verbose_name='жанр', related_name='genre')
+    genres = models.IntegerField(choices=[(tag.value, tag.label) for tag in GenreList], default=0,
+                                 verbose_name='жанр')
     binding = models.IntegerField(choices=[(tag.value, tag.label) for tag in BindingList], default=0,
                                   verbose_name='переплет')
     description = models.TextField(max_length=500, blank=True, null=True, verbose_name='описание')

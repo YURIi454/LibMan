@@ -31,7 +31,7 @@ class BookLoan(models.Model):
     """ Выдача книг. """
 
     reader = models.ForeignKey(AUTH_USER_MODEL, on_delete=CASCADE, verbose_name='читатель', related_name='reader')
-    book = models.ForeignKey(Book, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='книга')
+    book = models.ManyToManyField(Book, verbose_name='книга', related_name='книга')
     status = models.PositiveSmallIntegerField(choices=[(tag.value, tag.label) for tag in StatusList], default=2,
                                               verbose_name='статус выдачи')
 
@@ -42,6 +42,6 @@ class BookLoan(models.Model):
         return f'{self.reader}'
 
     class Meta:
-        verbose_name = 'Читатель'
-        verbose_name_plural = 'Читатели'
+        verbose_name = 'Выдача книг'
+        verbose_name_plural = 'Выдачи книг'
         ordering = ['reader']

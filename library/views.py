@@ -36,7 +36,7 @@ class UpdateBook(UpdateAPIView):
     lookup_field = 'pk'
 
     def get_queryset(self):
-        return Book.objects.prefetch_related("authors").prefetch_related("genres")
+        return Book.objects.prefetch_related("authors")
 
 
 class ListBook(ListAPIView):
@@ -51,7 +51,7 @@ class ListBook(ListAPIView):
     def get_queryset(self):
         """ Доступ всем. """
 
-        return Book.objects.prefetch_related("authors").prefetch_related("genres")
+        return Book.objects.prefetch_related("authors")
 
 
 class DetailBook(RetrieveAPIView):
@@ -63,7 +63,7 @@ class DetailBook(RetrieveAPIView):
     def get_queryset(self):
         """ Доступ всем. """
 
-        return Book.objects.prefetch_related("authors").prefetch_related("genres")
+        return Book.objects.prefetch_related("authors")
 
 
 class DeleteBook(DestroyAPIView):
